@@ -1,5 +1,6 @@
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = (c) => String(c || '').toLowerCase().replace(/,.*$/, '').replace(/\b(city|d\.?c\.?)\b/g, '').replace(/new york\s*$/, 'new york').replace(/^bangalore$/, 'bengaluru').replace(/^bombay$/, 'mumbai').replace(/^new delhi$/, 'delhi').trim();
 const pct = (x) => (typeof x === 'number' ? `${Math.round(x * 100)}` : '–');
 
 const TOOL_LABEL = {
@@ -165,10 +166,10 @@ async function baseline() {
     const res = await fetch('/api/baseline', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(lastQuery) });
     const b = await res.json();
     if (b.error) throw new Error(b.error);
-    const rank = new Map(lastPlan.markets.map((m, i) => [m.city.toLowerCase(), i + 1]));
+    const rank = new Map(lastPlan.markets.map((m, i) => [norm(m.city), i + 1]));
     const n = lastPlan.markets.length;
     const item = (s) => {
-      const r = rank.get(String(s.city || '').toLowerCase());
+      const r = rank.get(norm(s.city));
       const tag = r ? `<span class="tag ${r > n / 2 ? 'lowrank' : ''}">Qloo market rank ${r}/${n}</span>` : '<span class="tag">not in Qloo scan</span>';
       return `<li><b>${esc(s.city)}</b> · ${esc(s.venue || '')} ${tag}</li>`;
     };
