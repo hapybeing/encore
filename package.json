@@ -1,0 +1,10 @@
+{
+  "name": "encore",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Encore: a tour-routing agent for independent artists, grounded in Qloo's taste graph.",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "scripts": { "dev": "vercel dev", "test": "node --test test/" }
+}

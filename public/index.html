@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Encore · tours routed by taste</title>
+  <meta name="description" content="Encore is an AI agent that routes tours for independent artists to the cities, venues and openers where their fans actually are, using Qloo's taste graph." />
+  <meta property="og:title" content="Encore · tours routed by taste" />
+  <meta property="og:description" content="Type an artist. Get a fan-dense tour: cities ranked by audience affinity, matching venues, local openers and promo, with Qloo evidence for every stop." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='30' fill='%23ff4f2e'/><text x='32' y='43' font-size='34' text-anchor='middle' fill='white' font-family='Georgia'>E</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/"><span class="dot"></span>Encore</a>
+    <nav><a href="#how">How it works</a><a href="https://github.com/hapybeing/encore" target="_blank" rel="noopener">GitHub</a></nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Tour where your fans <em>actually</em> are.</h1>
+      <p class="lede">Most independent tours lose money because routes are guessed. Encore is an agent that reads Qloo's taste graph to rank every market by real audience affinity, then books the plan: venues whose crowd matches yours, local openers who sell tickets, and where to promote.</p>
+
+      <form id="form" class="planner" autocomplete="off">
+        <label class="field grow">
+          <span>Artist or band</span>
+          <input id="artist" name="artist" placeholder="e.g. Japanese Breakfast" required maxlength="120" />
+        </label>
+        <label class="field">
+          <span>Region</span>
+          <select id="region" name="region">
+            <option value="us">US &amp; Canada</option>
+            <option value="eu">UK &amp; Europe</option>
+            <option value="in">India</option>
+          </select>
+        </label>
+        <label class="field small">
+          <span>Stops</span>
+          <input id="stops" name="stops" type="number" min="3" max="10" value="6" />
+        </label>
+        <button id="go" type="submit">Route the tour</button>
+      </form>
+      <div class="examples">Try:
+        <button type="button" data-artist="Khruangbin" data-region="us">Khruangbin</button>
+        <button type="button" data-artist="Fontaines D.C." data-region="eu">Fontaines D.C.</button>
+        <button type="button" data-artist="Prateek Kuhad" data-region="in">Prateek Kuhad</button>
+        <button type="button" data-artist="Mitski" data-region="us">Mitski</button>
+      </div>
+    </section>
+
+    <section id="workspace" class="workspace" hidden>
+      <div class="map-wrap"><div id="map"></div><div id="map-legend" class="legend"></div></div>
+      <aside class="agent">
+        <div class="agent-head"><span class="pulse" id="pulse"></span><b>Agent</b><span id="status" class="muted">thinking…</span></div>
+        <ol id="log" class="log"></ol>
+      </aside>
+    </section>
+
+    <section id="result" class="result" hidden>
+      <div class="plan-head">
+        <p class="kicker" id="kicker"></p>
+        <h2 id="headline"></h2>
+        <p id="audience" class="audience"></p>
+      </div>
+      <ol id="stopsList" class="stops"></ol>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Markets, ranked by fan affinity</h3>
+          <p class="muted small">Qloo heatmap affinity across every candidate city. Chosen stops are highlighted.</p>
+          <div id="markets" class="bars"></div>
+        </div>
+        <div class="card">
+          <h3>Skip these</h3>
+          <ul id="skip" class="plain"></ul>
+          <h3 class="mt">Sponsors &amp; merch partners</h3>
+          <ul id="sponsors" class="chips"></ul>
+          <h3 class="mt">Fans also love</h3>
+          <div id="profile"></div>
+        </div>
+      </div>
+
+      <div class="card compare">
+        <div class="compare-head">
+          <h3>Encore vs. a generic AI</h3>
+          <button id="baselineBtn" class="ghost" type="button">Ask a plain LLM the same question</button>
+        </div>
+        <p class="muted small">Same model, same prompt, no Qloo. This is the difference taste data makes.</p>
+        <div id="compare" class="compare-grid"></div>
+      </div>
+
+      <details class="card trace">
+        <summary>Evidence trail · <span id="traceCount"></span> Qloo calls</summary>
+        <p class="muted small">Every recommendation above traces to these requests (no keys, no personal data). Affinities are aggregate audience signals, not predictions about individuals.</p>
+        <ol id="trace" class="mono"></ol>
+      </details>
+    </section>
+
+    <section id="how" class="how">
+      <h2>How Encore thinks</h2>
+      <ol class="steps">
+        <li><b>Resolve</b> the artist in Qloo's graph of 250M+ entities.</li>
+        <li><b>Rank markets</b>: a Qloo heatmap for every candidate city measures how hot the artist's audience runs there, and how big the scene is.</li>
+        <li><b>Read the audience</b> across domains: the brands, shows, podcasts and films the fans over-index on.</li>
+        <li><b>Book the stops</b>: venues whose crowd affinity matches, emerging local acts with fan overlap to open, and the neighbourhoods to poster.</li>
+        <li><b>Route</b> the chosen cities into the shortest drive, and show the evidence for every call.</li>
+      </ol>
+      <p class="muted">Built for the Qloo Agentic Hackathon by Gaurang Kumar. Open source under MIT.</p>
+    </section>
+  </main>
+
+  <template id="stopTpl">
+    <li class="stop">
+      <div class="num"></div>
+      <div class="body">
+        <div class="row1"><h4 class="city"></h4><span class="score"></span></div>
+        <p class="why"></p>
+        <dl>
+          <div><dt>Venue</dt><dd class="venue"></dd></div>
+          <div><dt>Opener</dt><dd class="opener"></dd></div>
+          <div><dt>Promo</dt><dd class="promo"></dd></div>
+        </dl>
+        <div class="hot"></div>
+      </div>
+    </li>
+  </template>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
